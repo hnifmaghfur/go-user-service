@@ -13,3 +13,10 @@ func ValidateLoginRequest(loginRequest r.LoginRequest) error {
 	}
 	return nil
 }
+
+func ValidateRegisterRequest(registerRequest r.RegisterRequest) error {
+	if err := validate.Struct(registerRequest); err != nil {
+		return err
+	}
+	return nil
+}

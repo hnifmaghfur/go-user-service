@@ -1,11 +1,14 @@
 package utils
 
 import (
+	"fmt"
 	"time"
 
+	"github.com/bradfitz/gomemcache/memcache"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/hnifmaghfur/go-user-service/internal/config"
 	"github.com/hnifmaghfur/go-user-service/internal/models"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type JwtAccessClaims struct {
@@ -22,7 +25,7 @@ type JwtRefreshClaims struct {
 func GenerateAccessToken(user models.User, cfg config.AuthConfig) (string, error) {
 	expiresIn, err := time.ParseDuration(cfg.AccessTokenExpiresIn)
 	if err != nil {
-		return "", err // or handle error appropriately
+		return "", err
 	}
 	claims := JwtAccessClaims{
 		Name: user.Name,
@@ -36,10 +39,10 @@ func GenerateAccessToken(user models.User, cfg config.AuthConfig) (string, error
 	return token.SignedString([]byte(cfg.AccessTokenSecretKey))
 }
 
-func GenerateRefreshToken(user models.User, cfg config.AuthConfig) (string, error) {
+func GenerateRefreshToken(user models.User, cfg config.AuthConfig, mc *memcache.Client) (string, error) {
 	expiresIn, err := time.ParseDuration(cfg.RefreshTokenExpiresIn)
 	if err != nil {
-		return "", err // or handle error appropriately
+		return "", err
 	}
 	claims := JwtRefreshClaims{
 		ID: user.ID,
@@ -49,5 +52,27 @@ func GenerateRefreshToken(user models.User, cfg config.AuthConfig) (string, erro
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString([]byte(cfg.RefreshTokenSecretKey))
+	tokenSign, err := token.SignedString([]byte(cfg.RefreshTokenSecretKey))
+	if err != nil {
+		return "", err
+	}
+
+	encToken := tokenSign
+	if len(encToken) > 72 {
+		encToken = encToken[:72]
+	}
+
+	// hash token before store
+	hashedToken, err := bcrypt.GenerateFromPassword([]byte(encToken), cfg.BcryptCost)
+	if err != nil {
+		return "", err
+	}
+	// store refresh token on memcache
+	mc.Set(&memcache.Item{
+		Key:        fmt.Sprintf("refresh_token:%d", user.ID),
+		Value:      hashedToken,
+		Expiration: int32(expiresIn.Seconds()),
+	})
+
+	return tokenSign, nil
 }

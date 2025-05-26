@@ -1,6 +1,7 @@
 package routes
 
 import (
+	_ "github.com/hnifmaghfur/go-user-service/docs"
 	"github.com/hnifmaghfur/go-user-service/internal/repositories"
 	s "github.com/hnifmaghfur/go-user-service/internal/server"
 	handlers "github.com/hnifmaghfur/go-user-service/internal/server/handlers"
@@ -10,7 +11,8 @@ import (
 
 func NewRoutes(server *s.Server) error {
 	authRepository := repositories.NewAuthRepository(server.DB)
-	authService := services.NewAuthService(authRepository, server.Cfg.Auth)
+	userRepository := repositories.NewUserRepository(server.DB)
+	authService := services.NewAuthService(authRepository, userRepository, server.Cfg.Auth, server.Mc)
 	authHandler := handlers.NewAuthHandler(authService)
 
 	// Prefix API
@@ -19,11 +21,10 @@ func NewRoutes(server *s.Server) error {
 	// swagger API
 	api.GET("/swagger/*", echoSwagger.WrapHandler)
 
-	// API Login
-	api.POST("/login", authHandler.Login)
-
-	// API Register
-	api.POST("/register", authHandler.Register)
+	// API Auth
+	auth := api.Group("/auth")
+	auth.POST("/login", authHandler.Login)
+	auth.POST("/register", authHandler.Register)
 
 	return nil
 }

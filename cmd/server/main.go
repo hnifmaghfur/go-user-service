@@ -6,8 +6,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/bradfitz/gomemcache/memcache"
 	"github.com/caarlos0/env/v11"
-	_ "github.com/hnifmaghfur/go-user-service/docs"
 	"github.com/hnifmaghfur/go-user-service/internal/config"
 	"github.com/hnifmaghfur/go-user-service/internal/db"
 	"github.com/hnifmaghfur/go-user-service/internal/server"
@@ -52,6 +52,9 @@ func run() error {
 		return fmt.Errorf("failed to connect database: %w", err)
 	}
 
+	// Initialize memcache
+	mc := memcache.New(cfg.Memcache.Host + ":" + cfg.Memcache.Port)
+
 	// Set database connection pool
 	sqlDB, err := db.DB()
 	if err != nil {
@@ -65,7 +68,7 @@ func run() error {
 	defer sqlDB.Close()
 
 	// Initialize and route server
-	app := server.NewServer(echo.New(), db, cfg)
+	app := server.NewServer(echo.New(), db, mc, cfg)
 	routes.NewRoutes(app)
 
 	// Start server

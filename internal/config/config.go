@@ -1,9 +1,10 @@
 package config
 
 type Config struct {
-	HTTP HTTPConfig
-	DB   DBConfig
-	Auth AuthConfig
+	HTTP     HTTPConfig
+	DB       DBConfig
+	Auth     AuthConfig
+	Memcache Memcache
 }
 
 type HTTPConfig struct {
@@ -28,4 +29,10 @@ type AuthConfig struct {
 	AccessTokenExpiresIn  string `env:"ACCESS_TOKEN_EXPIRES_IN"`
 	RefreshTokenSecretKey string `env:"REFRESH_TOKEN_SECRET_KEY"`
 	RefreshTokenExpiresIn string `env:"REFRESH_TOKEN_EXPIRES_IN"`
+	BcryptCost            int    `env:"BCRYPT_COST"`
+}
+
+type Memcache struct {
+	Host string `env:"MEMCACHE_HOST"`
+	Port string `env:"MEMCACHE_PORT"`
 }

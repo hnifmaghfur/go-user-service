@@ -1,7 +1,11 @@
 package services
 
 import (
+	"log"
+
+	"github.com/bradfitz/gomemcache/memcache"
 	"github.com/hnifmaghfur/go-user-service/internal/config"
+	"github.com/hnifmaghfur/go-user-service/internal/models"
 	"github.com/hnifmaghfur/go-user-service/internal/repositories"
 	req "github.com/hnifmaghfur/go-user-service/internal/requests"
 	res "github.com/hnifmaghfur/go-user-service/internal/responses"
@@ -11,16 +15,18 @@ import (
 
 type AuthService struct {
 	authRepository repositories.AuthRepository
+	userRepository repositories.UserRepository
 	cfg            config.AuthConfig
+	mc             *memcache.Client
 }
 
-func NewAuthService(authRepository repositories.AuthRepository, cfg config.AuthConfig) *AuthService {
-	return &AuthService{authRepository: authRepository, cfg: cfg}
+func NewAuthService(authRepository repositories.AuthRepository, userRepository repositories.UserRepository, cfg config.AuthConfig, mc *memcache.Client) *AuthService {
+	return &AuthService{authRepository: authRepository, userRepository: userRepository, cfg: cfg, mc: mc}
 }
 
 func (s *AuthService) Login(req req.LoginRequest) (res.TokenResponse, error) {
 	// check user with email
-	user, err := s.authRepository.Login(req.BasicAuth)
+	user, err := s.authRepository.Login(req.BasicAuth.Email)
 	if err != nil {
 		return res.TokenResponse{}, err
 	}
@@ -37,7 +43,7 @@ func (s *AuthService) Login(req req.LoginRequest) (res.TokenResponse, error) {
 	}
 
 	// config Refresh Token
-	refreshToken, err := utils.GenerateRefreshToken(user, s.cfg)
+	refreshToken, err := utils.GenerateRefreshToken(user, s.cfg, s.mc)
 	if err != nil {
 		return res.TokenResponse{}, err
 	}
@@ -51,8 +57,31 @@ func (s *AuthService) Login(req req.LoginRequest) (res.TokenResponse, error) {
 	}, nil
 }
 
-func (s *AuthService) Register() error {
-	return nil
+func (s *AuthService) Register(req req.RegisterRequest) (models.User, error) {
+	// check email exist or not
+	_, err := s.authRepository.Login(req.Email)
+	if err == nil {
+		return models.User{}, err
+	}
+
+	// hash password
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), s.cfg.BcryptCost)
+	log.Printf("hashed password: %q", hashedPassword)
+	if err != nil {
+		return models.User{}, err
+	}
+
+	// create user
+	user := models.User{
+		Email:    req.Email,
+		Password: string(hashedPassword),
+		Name:     req.Name,
+		Phone:    req.Phone,
+	}
+	if err := s.userRepository.Post(user); err != nil {
+		return models.User{}, err
+	}
+	return user, nil
 }
 
 func (s *AuthService) UpdatePassword() error {

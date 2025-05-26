@@ -1,4 +1,156 @@
+basePath: /v2
+definitions:
+  models.ErrorBadRequestResponse:
+    properties:
+      code:
+        example: 400
+        type: integer
+      error:
+        example: Bad Request
+        type: string
+    type: object
+  models.ErrorInternalServerErrorResponse:
+    properties:
+      code:
+        example: 500
+        type: integer
+      error:
+        example: Internal Server Error
+        type: string
+    type: object
+  models.LoginSuccess:
+    properties:
+      code:
+        example: 201
+        type: integer
+      data:
+        properties:
+          access_token:
+            example: access_token
+            type: string
+          expires_in:
+            example: 1h
+            type: string
+        type: object
+      message:
+        example: Post Success
+        type: string
+    type: object
+  models.RegisterSuccess:
+    properties:
+      code:
+        example: 201
+        type: integer
+      data:
+        properties:
+          id:
+            example: 1
+            type: integer
+        type: object
+      message:
+        example: Post Success
+        type: string
+    type: object
+  requests.LoginRequest:
+    properties:
+      email:
+        example: email@domain.com
+        type: string
+      password:
+        example: password
+        minLength: 5
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  requests.RegisterRequest:
+    properties:
+      email:
+        example: email@domain.com
+        type: string
+      name:
+        example: name
+        type: string
+      password:
+        example: password
+        minLength: 5
+        type: string
+      phone:
+        example: "081234567890"
+        type: string
+    required:
+    - email
+    - name
+    - password
+    - phone
+    type: object
+host: localhost:${PORT}
 info:
-  contact: {}
-paths: {}
+  contact:
+    email: hanif@maghfur.dev
+    name: Hanif Maghfur
+    url: https://maghfur.dev
+  description: This is user service application with Oauth2 and JWT security.
+  title: User Service
+  version: "1.0"
+paths:
+  /api/v1/login:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Login Request
+        in: body
+        name: login
+        required: true
+        schema:
+          $ref: '#/definitions/requests.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.LoginSuccess'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorBadRequestResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorInternalServerErrorResponse'
+      summary: Login
+      tags:
+      - Auth
+  /api/v1/register:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Register Request
+        in: body
+        name: registerRequest
+        required: true
+        schema:
+          $ref: '#/definitions/requests.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.RegisterSuccess'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorBadRequestResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorInternalServerErrorResponse'
+      summary: Register
+      tags:
+      - Auth
 swagger: "2.0"

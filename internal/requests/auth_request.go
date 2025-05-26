@@ -5,9 +5,10 @@ type BasicAuth struct {
 	Password string `json:"password" validate:"required,min=5" example:"password"`
 }
 
-type Register struct {
+type RegisterRequest struct {
 	BasicAuth
-	Name string `json:"name" validate:"required" example:"name"`
+	Name  string `json:"name" validate:"required" example:"name"`
+	Phone string `json:"phone" validate:"required" example:"081234567890"`
 }
 
 type LoginRequest struct {
