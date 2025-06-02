@@ -2,6 +2,7 @@ package routes
 
 import (
 	_ "github.com/hnifmaghfur/go-user-service/docs"
+	"github.com/hnifmaghfur/go-user-service/internal/middlewares"
 	"github.com/hnifmaghfur/go-user-service/internal/repositories"
 	s "github.com/hnifmaghfur/go-user-service/internal/server"
 	handlers "github.com/hnifmaghfur/go-user-service/internal/server/handlers"
@@ -21,10 +22,18 @@ func NewRoutes(server *s.Server) error {
 	// swagger API
 	api.GET("/swagger/*", echoSwagger.WrapHandler)
 
+	// apiCookie API
+	apiCookie := api.Group("")
+	apiCookie.Use(middlewares.CookieMiddleware(server.Cfg.Auth))
+
 	// API Auth
 	auth := api.Group("/auth")
 	auth.POST("/login", authHandler.Login)
 	auth.POST("/register", authHandler.Register)
+
+	// API Auth with Cookie
+	authCookie := apiCookie.Group("/auth")
+	authCookie.POST("/update-token", authHandler.UpdateAccessToken)
 
 	return nil
 }

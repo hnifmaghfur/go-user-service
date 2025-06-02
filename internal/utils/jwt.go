@@ -67,6 +67,7 @@ func GenerateRefreshToken(user models.User, cfg config.AuthConfig, mc *memcache.
 	if err != nil {
 		return "", err
 	}
+
 	// store refresh token on memcache
 	mc.Set(&memcache.Item{
 		Key:        fmt.Sprintf("refresh_token:%d", user.ID),
@@ -75,4 +76,20 @@ func GenerateRefreshToken(user models.User, cfg config.AuthConfig, mc *memcache.
 	})
 
 	return tokenSign, nil
+}
+
+func VerifyRefreshToken(tokenString string, cfg config.AuthConfig) (*JwtRefreshClaims, error) {
+	token, err := jwt.ParseWithClaims(tokenString, &JwtRefreshClaims{}, func(token *jwt.Token) (any, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok || token.Method.Alg() != jwt.SigningMethodHS256.Alg() {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		}
+		return []byte(cfg.RefreshTokenSecretKey), nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	if !token.Valid {
+		return nil, fmt.Errorf("invalid token")
+	}
+	return token.Claims.(*JwtRefreshClaims), nil
 }

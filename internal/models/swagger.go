@@ -49,3 +49,7 @@ type RegisterSuccess struct {
 		ID uint `json:"id" example:"1"`
 	}
 }
+
+type UpdateAccessTokenSuccess struct {
+	LoginSuccess
+}

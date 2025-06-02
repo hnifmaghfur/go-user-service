@@ -51,6 +51,24 @@ definitions:
         example: Post Success
         type: string
     type: object
+  models.UpdateAccessTokenSuccess:
+    properties:
+      code:
+        example: 201
+        type: integer
+      data:
+        properties:
+          access_token:
+            example: access_token
+            type: string
+          expires_in:
+            example: 1h
+            type: string
+        type: object
+      message:
+        example: Post Success
+        type: string
+    type: object
   requests.LoginRequest:
     properties:
       email:
@@ -95,6 +113,28 @@ info:
   title: User Service
   version: "1.0"
 paths:
+  /api/v1/auth/update-token:
+    post:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.UpdateAccessTokenSuccess'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorBadRequestResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorInternalServerErrorResponse'
+      summary: Update Access Token
+      tags:
+      - Auth
   /api/v1/login:
     post:
       consumes:

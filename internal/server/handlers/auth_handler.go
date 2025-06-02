@@ -45,14 +45,10 @@ func (ah *AuthHandler) Login(c echo.Context) error {
 		return responses.ErrorResponse(c, http.StatusInternalServerError, "Internal Server Error")
 	}
 
-	// insert refersh token on cookies
-	c.SetCookie(&http.Cookie{
-		Name:     "refresh_token",
-		Value:    token.RefreshToken,
-		Path:     "/",
-		HttpOnly: true,
-		Secure:   true,
-	})
+	err = ah.SetRefreshTokenCookie(c, token.RefreshToken)
+	if err != nil {
+		return responses.ErrorResponse(c, http.StatusInternalServerError, "Internal Server Error")
+	}
 
 	return responses.SuccessResponse(c, http.StatusOK, "Login Success", token.LoginResponse)
 }
@@ -86,6 +82,59 @@ func (ah *AuthHandler) Register(c echo.Context) error {
 
 }
 
-func (ah *AuthHandler) UpdatePassword(c echo.Context) error {
+// Update Access Token Doc
+// @Summary Update Access Token
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Success 201 {object} models.UpdateAccessTokenSuccess
+// @Failure 400 {object} models.ErrorBadRequestResponse
+// @Failure 500 {object} models.ErrorInternalServerErrorResponse
+// @Router /api/v1/auth/update-token [post]
+func (ah *AuthHandler) UpdateAccessToken(c echo.Context) error {
+	// private func for remove cookies
+	removeCookie := func() error {
+		c.SetCookie(&http.Cookie{
+			Name:     "refresh_token",
+			Value:    "",
+			Path:     "/",
+			HttpOnly: true,
+			Secure:   true,
+		})
+		return nil
+	}
+
+	if c.Get("token_id") == nil && c.Get("token") == nil {
+		removeCookie()
+		return responses.ErrorResponse(c, http.StatusUnauthorized, "Invalid Token")
+	}
+
+	reqUpdateAccessToken := new(r.UpdateAccessTokenRequest)
+	reqUpdateAccessToken.TokenId = c.Get("token_id").(uint)
+	reqUpdateAccessToken.RefreshToken = c.Get("token").(string)
+
+	newToken, err := ah.authService.UpdateAccessToken(*reqUpdateAccessToken)
+	if err != nil {
+		removeCookie()
+		return responses.ErrorResponse(c, http.StatusInternalServerError, "Internal Server Error")
+	}
+
+	err = ah.SetRefreshTokenCookie(c, newToken.RefreshToken)
+	if err != nil {
+		return responses.ErrorResponse(c, http.StatusInternalServerError, "Internal Server Error")
+	}
+
+	return responses.SuccessResponse(c, http.StatusCreated, "Update Access Token Success", newToken.LoginResponse)
+}
+
+func (ah *AuthHandler) SetRefreshTokenCookie(c echo.Context, token string) error {
+	// insert refersh token on cookies
+	c.SetCookie(&http.Cookie{
+		Name:     "refresh_token",
+		Value:    token,
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   true,
+	})
 	return nil
 }

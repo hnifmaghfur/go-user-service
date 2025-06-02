@@ -1,6 +1,7 @@
 package services
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/bradfitz/gomemcache/memcache"
@@ -84,6 +85,43 @@ func (s *AuthService) Register(req req.RegisterRequest) (models.User, error) {
 	return user, nil
 }
 
-func (s *AuthService) UpdatePassword() error {
-	return nil
+func (s *AuthService) UpdateAccessToken(req req.UpdateAccessTokenRequest) (res.TokenResponse, error) {
+
+	// check user exist
+	user, err := s.authRepository.GetUserById(req.TokenId)
+	if err != nil {
+		return res.TokenResponse{}, err
+	}
+
+	// check refresh token
+	item, err := s.mc.Get(fmt.Sprintf("refresh_token:%d", req.TokenId))
+	if err != nil {
+		return res.TokenResponse{}, err
+	}
+
+	// compare refresh token
+	if err := bcrypt.CompareHashAndPassword(item.Value, []byte(req.RefreshToken)); err != nil {
+		return res.TokenResponse{}, err
+	}
+
+	// generate new access token
+	accessToken, err := utils.GenerateAccessToken(user, s.cfg)
+	if err != nil {
+		return res.TokenResponse{}, err
+	}
+
+	// generate new refresh token
+	refreshToken, err := utils.GenerateRefreshToken(user, s.cfg, s.mc)
+	if err != nil {
+		return res.TokenResponse{}, err
+	}
+
+	return res.TokenResponse{
+		LoginResponse: res.LoginResponse{
+			AccessToken: accessToken,
+			ExpiresIn:   s.cfg.AccessTokenExpiresIn,
+		},
+		RefreshToken: refreshToken,
+	}, nil
+
 }

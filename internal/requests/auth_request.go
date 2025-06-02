@@ -14,3 +14,8 @@ type RegisterRequest struct {
 type LoginRequest struct {
 	BasicAuth
 }
+
+type UpdateAccessTokenRequest struct {
+	TokenId      uint   `json:"token_id" validate:"required" example:"1"`
+	RefreshToken string `json:"refresh_token" validate:"required" example:"refresh_token"`
+}

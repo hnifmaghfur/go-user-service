@@ -20,3 +20,11 @@ func (ar *AuthRepository) Login(email string) (models.User, error) {
 	}
 	return user, nil
 }
+
+func (ar *AuthRepository) GetUserById(id uint) (models.User, error) {
+	var user models.User
+	if err := ar.db.Where("id = ?", id).First(&user).Error; err != nil {
+		return models.User{}, err
+	}
+	return user, nil
+}
