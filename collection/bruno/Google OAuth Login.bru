@@ -1,0 +1,11 @@
+meta {
+  name: Google OAuth Login
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{host}}/auth/google
+  body: none
+  auth: inherit
+}

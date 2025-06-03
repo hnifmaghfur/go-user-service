@@ -14,13 +14,17 @@ func NewRoutes(server *s.Server) error {
 	authRepository := repositories.NewAuthRepository(server.DB)
 	userRepository := repositories.NewUserRepository(server.DB)
 	authService := services.NewAuthService(authRepository, userRepository, server.Cfg.Auth, server.Mc)
-	authHandler := handlers.NewAuthHandler(authService)
+	authHandler := handlers.NewAuthHandler(authService, server.Cfg.Auth)
 
 	// Prefix API
 	api := server.Echo.Group("/api/v1")
 
 	// swagger API
 	api.GET("/swagger/*", echoSwagger.WrapHandler)
+
+	// OAuth 2.0 Google API
+	api.GET("/auth/google", authHandler.GoogleLogin)
+	api.GET("/auth/google/callback", authHandler.GoogleCallback)
 
 	// apiCookie API
 	apiCookie := api.Group("")

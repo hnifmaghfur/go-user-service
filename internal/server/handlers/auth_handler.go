@@ -4,19 +4,22 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/hnifmaghfur/go-user-service/internal/config"
 	r "github.com/hnifmaghfur/go-user-service/internal/requests"
 	"github.com/hnifmaghfur/go-user-service/internal/responses"
 	"github.com/hnifmaghfur/go-user-service/internal/services"
 	"github.com/hnifmaghfur/go-user-service/internal/utils"
 	"github.com/labstack/echo/v4"
+	"golang.org/x/oauth2"
 )
 
 type AuthHandler struct {
 	authService *services.AuthService
+	cfg         config.AuthConfig
 }
 
-func NewAuthHandler(authService *services.AuthService) AuthHandler {
-	return AuthHandler{authService: authService}
+func NewAuthHandler(authService *services.AuthService, cfg config.AuthConfig) AuthHandler {
+	return AuthHandler{authService: authService, cfg: cfg}
 }
 
 // Login Doc
@@ -125,6 +128,16 @@ func (ah *AuthHandler) UpdateAccessToken(c echo.Context) error {
 	}
 
 	return responses.SuccessResponse(c, http.StatusCreated, "Update Access Token Success", newToken.LoginResponse)
+}
+
+func (ah *AuthHandler) GoogleLogin(c echo.Context) error {
+	url := utils.NewGoogleConfig(ah.cfg).AuthCodeURL(ah.cfg.Google.State, oauth2.AccessTypeOffline)
+	return responses.SuccessResponse(c, http.StatusOK, "Google Login Success", url)
+}
+
+func (ah *AuthHandler) GoogleCallback(c echo.Context) error {
+	log.Println(c.QueryParam(ah.cfg.Google.State))
+	return nil
 }
 
 func (ah *AuthHandler) SetRefreshTokenCookie(c echo.Context, token string) error {
