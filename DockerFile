@@ -11,8 +11,14 @@ RUN go mod verify
 # Copy the rest of the source code
 COPY . .
 
-# Build the Go app (adjust the output binary name as needed)
+# Install swag CLI
+RUN go install github.com/swaggo/swag/cmd/swag@latest
+ENV PATH="/go/bin:${PATH}"
+
+# Generate Swagger docs
 RUN swag init -g cmd/server/main.go
+
+# Build the Go app
 RUN go build -o bin/app ./cmd/server/main.go
 
 # --- Run stage ---
