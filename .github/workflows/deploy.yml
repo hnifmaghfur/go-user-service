@@ -58,4 +58,4 @@ jobs:
                   docker rm ${{ github.event.repository.name }} || true
                   echo ${{ secrets.GHCR_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
                   docker pull ghcr.io/${{ github.repository }}:latest
-                  docker run -d --name ${{ github.event.repository.name }} -p 8000:8000 ghcr.io/${{ github.repository }}:latest
+                  docker run -d --name ${{ github.event.repository.name }} -p 8000:8000 -v ${{ secrets.ENV_FILE }}:/app/.env ghcr.io/${{ github.repository }}:latest
